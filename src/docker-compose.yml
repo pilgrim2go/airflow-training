@@ -1,0 +1,43 @@
+version: "3.7"
+services:
+  airflow:
+    build: ../docker
+    image: manning-airflow:latest
+    networks:
+      - airflow
+    environment:
+      AWS_DEFAULT_REGION: us-west-2
+      AIRFLOW_CONN_MY_AWS_CONN: 's3://?aws_access_key_id=${AWS_ACCESS_KEY}&aws_secret_access_key=${AWS_ACCESS_SECRET}'
+      AIRFLOW_CONN_MY_POSTGRES_CONN: 'postgresql://airflow:airflow@postgres:5432/airflow'
+      RATINGS_BUCKET: ${RATINGS_BUCKET}
+      RANKINGS_BUCKET: ${RANKINGS_BUCKET}
+      CRAWLER_NAME: ${CRAWLER_NAME}
+      # aws_access_key_id: ${AWS_ACCESS_KEY}
+      # aws_secret_access_key: ${AWS_ACCESS_SECRET}
+ 
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/data
+      - ./dags:/root/airflow/dags
+
+    depends_on:
+      - postgres
+  postgres:
+    build: db
+    networks:
+      - airflow
+    environment:
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_USER: airflow    
+  clh:
+    image: yandex/clickhouse-server
+    networks:
+      - airflow
+    ports:
+      - 8123:8123
+      - 9000:9000
+networks:
+  airflow:
+
+#  docker run -it --rm --network airflow --link clh:clh-server yandex/clickhouse-client --host clh-server   
